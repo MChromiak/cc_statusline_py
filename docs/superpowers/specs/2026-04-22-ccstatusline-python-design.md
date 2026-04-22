@@ -89,7 +89,30 @@ Each `Widget` subclass declares a `category: str` class attribute (e.g. `"tokens
 
 ### StatusData
 
-A Pydantic model mapping the JSON Claude Code pipes in. Fields include: `model`, `tokens_input`, `tokens_output`, `context_window`, `session_id`, `session_start`, `session_cost`, `git_branch`, `git_dirty`, `cwd`, `claude_email`, plus raw passthrough for unknown fields.
+A Pydantic model mapping the JSON Claude Code pipes in, matching the original's `StatusJSONSchema` (Zod). All fields are optional to handle future schema additions gracefully.
+
+```python
+class StatusData(BaseModel):
+    hook_event_name: str | None = None
+    session_id: str | None = None
+    transcript_path: str | None = None
+    cwd: str | None = None
+    model: str | dict | None = None       # string or {"id": ..., "display_name": ...}
+    version: str | None = None
+    output_style: str | None = None
+    workspace: dict | None = None         # {"current_dir": ..., "project_dir": ...}
+    cost: dict | None = None              # {"total_cost_usd": ..., "total_duration_ms": ..., ...}
+    context_window: dict | None = None    # {"context_window_size": ..., "total_input_tokens": ...,
+                                          #  "total_output_tokens": ..., "current_usage": ...,
+                                          #  "used_percentage": ..., "remaining_percentage": ...}
+    vim: dict | None = None               # {"mode": ...}
+    worktree: dict | None = None          # {"name": ..., "path": ..., "branch": ..., ...}
+    rate_limits: dict | None = None       # {"five_hour": {...}, "seven_day": {...}}
+
+    model_config = ConfigDict(extra="allow")  # pass-through unknown fields
+```
+
+Widgets access fields via helper properties on `StatusData` (e.g. `data.model_name`, `data.tokens_used`, `data.cost_usd`) that safely extract values from the nested dicts.
 
 ### Core widgets (initial release)
 
@@ -128,7 +151,7 @@ On first run, if no TOML config exists but the original JSON config does:
 ### TOML schema
 
 ```toml
-color_level = "truecolor"   # "basic" | "256" | "truecolor"
+color_level = "truecolor"   # "none" | "basic" | "256" | "truecolor"
 minimalist_mode = false
 
 [powerline]
@@ -157,7 +180,7 @@ Multiple `[[lines]]` entries produce multiple statusline rows (same as the origi
 
 ```python
 class Config(BaseModel):
-    color_level: Literal["basic", "256", "truecolor"] = "truecolor"
+    color_level: Literal["none", "basic", "256", "truecolor"] = "truecolor"
     minimalist_mode: bool = False
     powerline: PowerlineConfig = PowerlineConfig()
     lines: list[LineConfig] = []
@@ -187,10 +210,16 @@ The renderer takes `Config` + `StatusData` and produces the final ANSI string.
 
 ### Color handling
 
-Matches the original's three levels exactly:
-- `basic`: map hex to nearest ANSI 16-color using a fixed Euclidean distance palette
-- `256`: map hex to nearest xterm-256 palette index
-- `truecolor`: emit `\x1b[38;2;R;G;Bm` / `\x1b[48;2;R;G;Bm` directly
+The original stores color level as an integer (0–3) in its JSON config. The Python version uses descriptive strings in TOML for readability — the mapping is:
+
+| TOML string | Original int | Behavior |
+|---|---|---|
+| `"none"` | 0 | No color output |
+| `"basic"` | 1 | Map hex to nearest ANSI 16-color via Euclidean distance |
+| `"256"` | 2 | Map hex to nearest xterm-256 palette index |
+| `"truecolor"` | 3 | Emit `\x1b[38;2;R;G;Bm` / `\x1b[48;2;R;G;Bm` directly |
+
+The JSON migration step maps the original integer to the corresponding string.
 
 ### Powerline glyphs
 
