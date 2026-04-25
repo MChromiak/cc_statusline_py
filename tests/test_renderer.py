@@ -54,3 +54,77 @@ def test_visible_len_plain_string():
 
 def test_visible_len_empty():
     assert visible_len("") == 0
+
+
+import ccstatusline.widgets.core  # noqa: F401
+from ccstatusline.config import Config, LineConfig, PowerlineConfig
+from ccstatusline.renderer import render_statusline, visible_len, ANSI_ESCAPE_RE
+from ccstatusline.widgets.base import WidgetConfig
+
+
+def _strip_ansi(s: str) -> str:
+    return ANSI_ESCAPE_RE.sub("", s)
+
+
+def test_render_empty_config(sample_data):
+    c = Config()
+    assert render_statusline(c, sample_data) == ""
+
+
+def test_render_single_widget_visible_text(sample_data):
+    wc = WidgetConfig(type="model", fg="#ffffff", bg="#000000", padding=1)
+    c = Config(lines=[LineConfig(widgets=[wc])], minimalist_mode=True)
+    result = render_statusline(c, sample_data)
+    assert "claude-sonnet-4-5" in _strip_ansi(result)
+
+
+def test_render_skips_empty_widget_output():
+    from ccstatusline.data import StatusData
+    wc = WidgetConfig(type="model")
+    c = Config(lines=[LineConfig(widgets=[wc])], minimalist_mode=True)
+    result = render_statusline(c, StatusData())
+    assert _strip_ansi(result).strip() == ""
+
+
+def test_render_skips_unknown_widget_type(sample_data):
+    wc = WidgetConfig(type="nonexistent_widget_xyz")
+    c = Config(lines=[LineConfig(widgets=[wc])], minimalist_mode=True)
+    result = render_statusline(c, sample_data)
+    assert result == ""
+
+
+def test_render_multiple_lines(sample_data):
+    wc1 = WidgetConfig(type="model", fg="#ffffff", bg="#000000", padding=0)
+    wc2 = WidgetConfig(type="session_cost", fg="#ffffff", bg="#000000", padding=0)
+    c = Config(
+        lines=[LineConfig(widgets=[wc1]), LineConfig(widgets=[wc2])],
+        minimalist_mode=True,
+    )
+    result = render_statusline(c, sample_data)
+    lines = result.split("\n")
+    assert len(lines) == 2
+    assert "claude-sonnet-4-5" in _strip_ansi(lines[0])
+    assert "$0.0234" in _strip_ansi(lines[1])
+
+
+def test_render_powerline_contains_separator_glyph(sample_data):
+    wc1 = WidgetConfig(type="model", fg="#ffffff", bg="#1e1e2e", padding=1)
+    wc2 = WidgetConfig(type="session_cost", fg="#ffffff", bg="#313244", padding=1)
+    pl = PowerlineConfig(enabled=True, separator="", left_cap="", right_cap="")
+    c = Config(
+        lines=[LineConfig(widgets=[wc1, wc2])],
+        powerline=pl,
+        minimalist_mode=True,
+    )
+    result = render_statusline(c, sample_data)
+    visible = _strip_ansi(result)
+    assert "" in visible or "" in visible
+
+
+def test_render_plain_no_powerline_glyphs(sample_data):
+    wc = WidgetConfig(type="model", fg="#ffffff", bg="#000000", padding=1)
+    pl = PowerlineConfig(enabled=False)
+    c = Config(lines=[LineConfig(widgets=[wc])], powerline=pl, minimalist_mode=True)
+    result = render_statusline(c, sample_data)
+    assert "" not in result
+    assert "" not in result

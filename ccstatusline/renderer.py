@@ -90,3 +90,100 @@ def ansi_bg(hex_color: str, color_level: str) -> str:
 
 def visible_len(s: str) -> int:
     return len(ANSI_ESCAPE_RE.sub("", s))
+
+
+def _wrap_segment(text: str, wc: WidgetConfig, color_level: str) -> str:
+    pad = " " * wc.padding
+    content = f"{pad}{text}{pad}"
+    fg = ansi_fg(wc.fg, color_level)
+    bg = ansi_bg(wc.bg, color_level)
+    bold = BOLD if wc.bold else ""
+    return f"{bg}{fg}{bold}{content}{RESET}"
+
+
+def _render_plain(
+    segments: list[tuple[str, WidgetConfig]], color_level: str
+) -> str:
+    return "".join(
+        _wrap_segment(text, wc, color_level)
+        for text, wc in segments
+        if text
+    )
+
+
+def _render_powerline(
+    segments: list[tuple[str, WidgetConfig]],
+    color_level: str,
+    separator: str,
+    left_cap: str,
+    right_cap: str,
+) -> str:
+    active = [(text, wc) for text, wc in segments if text]
+    if not active:
+        return ""
+
+    parts: list[str] = []
+
+    # Left cap: colored with first segment's bg
+    first_bg = active[0][1].bg
+    parts.append(f"{ansi_fg(first_bg, color_level)}{left_cap}{RESET}")
+
+    for i, (text, wc) in enumerate(active):
+        pad = " " * wc.padding
+        fg = ansi_fg(wc.fg, color_level)
+        bg = ansi_bg(wc.bg, color_level)
+        bold = BOLD if wc.bold else ""
+        parts.append(f"{bg}{fg}{bold}{pad}{text}{pad}{RESET}")
+
+        if i < len(active) - 1:
+            next_bg = active[i + 1][1].bg
+            # Arrow fg = current segment bg, arrow bg = next segment bg
+            parts.append(
+                f"{ansi_bg(next_bg, color_level)}{ansi_fg(wc.bg, color_level)}{separator}{RESET}"
+            )
+
+    # Right cap: colored with last segment's bg
+    last_bg = active[-1][1].bg
+    parts.append(f"{ansi_fg(last_bg, color_level)}{right_cap}{RESET}")
+
+    return "".join(parts)
+
+
+def render_statusline(config: Config, data: StatusData) -> str:
+    if not config.lines:
+        return ""
+
+    term_width = shutil.get_terminal_size((80, 24)).columns
+    output_lines: list[str] = []
+
+    for line_config in config.lines:
+        segments: list[tuple[str, WidgetConfig]] = []
+        for wc in line_config.widgets:
+            cls = REGISTRY.get(wc.type)
+            if cls is None:
+                continue
+            try:
+                text = cls().render(data, wc)
+            except Exception:
+                text = ""
+            segments.append((text, wc))
+
+        if config.powerline.enabled:
+            line_str = _render_powerline(
+                segments,
+                config.color_level,
+                config.powerline.separator,
+                config.powerline.left_cap,
+                config.powerline.right_cap,
+            )
+        else:
+            line_str = _render_plain(segments, config.color_level)
+
+        if not config.minimalist_mode:
+            vlen = visible_len(line_str)
+            if vlen < term_width:
+                line_str += " " * (term_width - vlen)
+
+        output_lines.append(line_str)
+
+    return "\n".join(output_lines)
