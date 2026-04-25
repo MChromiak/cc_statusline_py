@@ -123,3 +123,15 @@ def test_migrate_skips_unknown_widget(tmp_path, capsys):
     assert result.lines[0].widgets == []
     captured = capsys.readouterr()
     assert "UnknownWidget123" in captured.err
+
+
+def test_migrate_burn_rate_widget(tmp_path):
+    json_data = {
+        "colorLevel": 3,
+        "lines": [[{"type": "BurnRate", "styling": {"fg": "#fff", "bg": "#000"}}]],
+    }
+    json_file = tmp_path / "settings.json"
+    json_file.write_text(json.dumps(json_data))
+    result = _migrate_from_json(json_file)
+
+    assert result.lines[0].widgets[0].type == "burn_rate"
