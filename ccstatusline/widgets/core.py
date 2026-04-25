@@ -222,6 +222,27 @@ class SessionCostWidget(Widget):
         return f"${cost:.4f}" if cost else ""
 
 
+@register_widget("burn_rate")
+class BurnRateWidget(Widget):
+    category = "session"
+
+    def render(
+        self,
+        data: StatusData,
+        config: WidgetConfig,
+        color_level: str = "truecolor",
+    ) -> str:
+        cost = data.cost_usd
+        duration_ms = data.session_duration_ms
+        if not cost or not duration_ms:
+            return ""
+        if duration_ms < 600_000:
+            rate_per_min = cost / (duration_ms / 60_000)
+            return f"${rate_per_min:.3f}/min"
+        rate_per_hour = cost / (duration_ms / 3_600_000)
+        return f"${rate_per_hour:.2f}/h"
+
+
 @register_widget("session_name")
 class SessionNameWidget(Widget):
     category = "session"

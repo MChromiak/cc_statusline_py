@@ -229,3 +229,246 @@ def test_claude_email_widget_no_file():
     w = REGISTRY["claude_email"]()
     with patch.object(Path, "exists", return_value=False):
         assert w.render(StatusData(), _wc("claude_email")) == ""
+
+
+def _mock_run(stdout: str, returncode: int = 0):
+    from unittest.mock import MagicMock
+    m = MagicMock()
+    m.stdout = stdout
+    m.returncode = returncode
+    return m
+
+
+def test_git_sha_widget():
+    from unittest.mock import patch
+    d = StatusData(cwd="/tmp/repo")
+    w = REGISTRY["git_sha"]()
+    with patch("subprocess.run", return_value=_mock_run("a1b2c3d\n")):
+        assert w.render(d, _wc("git_sha")) == "a1b2c3d"
+
+
+def test_git_sha_widget_error_returns_empty():
+    from unittest.mock import patch
+    w = REGISTRY["git_sha"]()
+    with patch("subprocess.run", side_effect=Exception("no git")):
+        assert w.render(StatusData(), _wc("git_sha")) == ""
+
+
+def test_git_sha_widget_nonzero_returncode_returns_empty():
+    from unittest.mock import patch
+    w = REGISTRY["git_sha"]()
+    with patch("subprocess.run", return_value=_mock_run("", returncode=128)):
+        assert w.render(StatusData(), _wc("git_sha")) == ""
+
+
+def test_git_ahead_widget():
+    from unittest.mock import patch
+    d = StatusData(cwd="/tmp/repo")
+    w = REGISTRY["git_ahead"]()
+    with patch("subprocess.run", return_value=_mock_run("3\n")):
+        assert w.render(d, _wc("git_ahead")) == "↑3"
+
+
+def test_git_ahead_widget_zero_returns_empty():
+    from unittest.mock import patch
+    w = REGISTRY["git_ahead"]()
+    with patch("subprocess.run", return_value=_mock_run("0\n")):
+        assert w.render(StatusData(), _wc("git_ahead")) == ""
+
+
+def test_git_ahead_widget_no_upstream_returns_empty():
+    from unittest.mock import patch
+    w = REGISTRY["git_ahead"]()
+    with patch("subprocess.run", return_value=_mock_run("", returncode=128)):
+        assert w.render(StatusData(), _wc("git_ahead")) == ""
+
+
+def test_git_behind_widget():
+    from unittest.mock import patch
+    w = REGISTRY["git_behind"]()
+    with patch("subprocess.run", return_value=_mock_run("2\n")):
+        assert w.render(StatusData(), _wc("git_behind")) == "↓2"
+
+
+def test_git_behind_widget_zero_returns_empty():
+    from unittest.mock import patch
+    w = REGISTRY["git_behind"]()
+    with patch("subprocess.run", return_value=_mock_run("0\n")):
+        assert w.render(StatusData(), _wc("git_behind")) == ""
+
+
+def test_git_staged_widget():
+    from unittest.mock import patch
+    porcelain = "M  staged.py\nA  added.py\n M unstaged.py\n?? new.py\n"
+    w = REGISTRY["git_staged"]()
+    with patch("subprocess.run", return_value=_mock_run(porcelain)):
+        assert w.render(StatusData(), _wc("git_staged")) == "●2"
+
+
+def test_git_staged_widget_clean_returns_empty():
+    from unittest.mock import patch
+    w = REGISTRY["git_staged"]()
+    with patch("subprocess.run", return_value=_mock_run("")):
+        assert w.render(StatusData(), _wc("git_staged")) == ""
+
+
+def test_git_unstaged_widget():
+    from unittest.mock import patch
+    porcelain = "M  staged.py\n M mod1.py\n D del1.py\n?? new.py\n"
+    w = REGISTRY["git_unstaged"]()
+    with patch("subprocess.run", return_value=_mock_run(porcelain)):
+        assert w.render(StatusData(), _wc("git_unstaged")) == "✚2"
+
+
+def test_git_unstaged_widget_clean_returns_empty():
+    from unittest.mock import patch
+    w = REGISTRY["git_unstaged"]()
+    with patch("subprocess.run", return_value=_mock_run("")):
+        assert w.render(StatusData(), _wc("git_unstaged")) == ""
+
+
+def test_git_untracked_widget():
+    from unittest.mock import patch
+    porcelain = "M  staged.py\n M mod.py\n?? new1.py\n?? new2.py\n?? new3.py\n"
+    w = REGISTRY["git_untracked"]()
+    with patch("subprocess.run", return_value=_mock_run(porcelain)):
+        assert w.render(StatusData(), _wc("git_untracked")) == "…3"
+
+
+def test_git_untracked_widget_clean_returns_empty():
+    from unittest.mock import patch
+    w = REGISTRY["git_untracked"]()
+    with patch("subprocess.run", return_value=_mock_run("")):
+        assert w.render(StatusData(), _wc("git_untracked")) == ""
+
+
+def test_session_name_widget_default_length():
+    d = StatusData(session_id="abcdef1234567890")
+    w = REGISTRY["session_name"]()
+    assert w.render(d, _wc("session_name")) == "abcdef12"
+
+
+def test_session_name_widget_custom_length():
+    d = StatusData(session_id="abcdef1234567890")
+    w = REGISTRY["session_name"]()
+    assert w.render(d, _wc("session_name", length=4)) == "abcd"
+
+
+def test_session_name_widget_empty():
+    w = REGISTRY["session_name"]()
+    assert w.render(StatusData(), _wc("session_name")) == ""
+
+
+def test_thinking_effort_widget_top_level():
+    d = StatusData.model_validate({"thinking_effort": "high"})
+    w = REGISTRY["thinking_effort"]()
+    assert w.render(d, _wc("thinking_effort")) == "high"
+
+
+def test_thinking_effort_widget_inside_model():
+    d = StatusData(model={"id": "x", "thinking_effort": "medium"})
+    w = REGISTRY["thinking_effort"]()
+    assert w.render(d, _wc("thinking_effort")) == "medium"
+
+
+def test_thinking_effort_widget_empty():
+    w = REGISTRY["thinking_effort"]()
+    assert w.render(StatusData(), _wc("thinking_effort")) == ""
+
+
+def test_block_reset_timer_widget_seconds():
+    d = StatusData(rate_limits={"reset_seconds": 125})
+    w = REGISTRY["block_reset_timer"]()
+    assert w.render(d, _wc("block_reset_timer")) == "2m5s"
+
+
+def test_block_reset_timer_widget_hours():
+    d = StatusData(rate_limits={"reset_seconds": 3700})
+    w = REGISTRY["block_reset_timer"]()
+    assert w.render(d, _wc("block_reset_timer")) == "1h1m"
+
+
+def test_block_reset_timer_widget_just_seconds():
+    d = StatusData(rate_limits={"reset_seconds": 45})
+    w = REGISTRY["block_reset_timer"]()
+    assert w.render(d, _wc("block_reset_timer")) == "45s"
+
+
+def test_block_reset_timer_widget_unix_timestamp():
+    import time
+    d = StatusData(rate_limits={"reset_at_unix": time.time() + 90})
+    w = REGISTRY["block_reset_timer"]()
+    result = w.render(d, _wc("block_reset_timer"))
+    assert result.endswith("s") or result.endswith("m")
+
+
+def test_block_reset_timer_widget_iso8601():
+    from datetime import datetime, timezone, timedelta
+    target = datetime.now(timezone.utc) + timedelta(minutes=5)
+    d = StatusData(rate_limits={"reset_at": target.isoformat()})
+    w = REGISTRY["block_reset_timer"]()
+    result = w.render(d, _wc("block_reset_timer"))
+    assert "m" in result
+
+
+def test_block_reset_timer_widget_no_data_returns_empty():
+    w = REGISTRY["block_reset_timer"]()
+    assert w.render(StatusData(), _wc("block_reset_timer")) == ""
+
+
+def test_block_reset_timer_widget_already_elapsed_returns_empty():
+    d = StatusData(rate_limits={"reset_seconds": -10})
+    w = REGISTRY["block_reset_timer"]()
+    assert w.render(d, _wc("block_reset_timer")) == ""
+
+
+def test_vim_mode_widget():
+    d = StatusData(vim={"mode": "INSERT"})
+    w = REGISTRY["vim_mode"]()
+    assert w.render(d, _wc("vim_mode")) == "INSERT"
+
+
+def test_vim_mode_widget_alt_key():
+    d = StatusData(vim={"current_mode": "NORMAL"})
+    w = REGISTRY["vim_mode"]()
+    assert w.render(d, _wc("vim_mode")) == "NORMAL"
+
+
+def test_vim_mode_widget_empty():
+    w = REGISTRY["vim_mode"]()
+    assert w.render(StatusData(), _wc("vim_mode")) == ""
+
+
+def test_burn_rate_long_session_per_hour():
+    d = StatusData(cost={"total_cost_usd": 0.50, "total_duration_ms": 3_600_000})
+    w = REGISTRY["burn_rate"]()
+    assert w.render(d, _wc("burn_rate")) == "$0.50/h"
+
+
+def test_burn_rate_short_session_per_minute():
+    d = StatusData(cost={"total_cost_usd": 0.01, "total_duration_ms": 300_000})
+    w = REGISTRY["burn_rate"]()
+    assert w.render(d, _wc("burn_rate")) == "$0.002/min"
+
+
+def test_burn_rate_exactly_10_min_uses_per_hour():
+    d = StatusData(cost={"total_cost_usd": 0.05, "total_duration_ms": 600_000})
+    w = REGISTRY["burn_rate"]()
+    assert w.render(d, _wc("burn_rate")) == "$0.30/h"
+
+
+def test_burn_rate_zero_cost_returns_empty():
+    d = StatusData(cost={"total_cost_usd": 0.0, "total_duration_ms": 60_000})
+    w = REGISTRY["burn_rate"]()
+    assert w.render(d, _wc("burn_rate")) == ""
+
+
+def test_burn_rate_zero_duration_returns_empty():
+    d = StatusData(cost={"total_cost_usd": 0.10, "total_duration_ms": 0})
+    w = REGISTRY["burn_rate"]()
+    assert w.render(d, _wc("burn_rate")) == ""
+
+
+def test_burn_rate_missing_cost_returns_empty():
+    w = REGISTRY["burn_rate"]()
+    assert w.render(StatusData(), _wc("burn_rate")) == ""
