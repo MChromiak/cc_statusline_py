@@ -34,4 +34,9 @@ class Widget(ABC):
     category: str = "custom"
 
     @abstractmethod
-    def render(self, data: StatusData, config: WidgetConfig) -> str: ...
+    def render(
+        self,
+        data: StatusData,
+        config: WidgetConfig,
+        color_level: str = "truecolor",
+    ) -> str: ...

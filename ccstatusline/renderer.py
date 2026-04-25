@@ -163,7 +163,7 @@ def render_statusline(config: Config, data: StatusData) -> str:
             if cls is None:
                 continue
             try:
-                text = cls().render(data, wc)
+                text = cls().render(data, wc, config.color_level)
             except Exception:
                 text = ""
             segments.append((text, wc))
