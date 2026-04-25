@@ -97,3 +97,86 @@ def test_context_bar_widget_custom_width(sample_data):
     w = REGISTRY["context_bar"]()
     result = w.render(sample_data, _wc("context_bar", bar_width=5))
     assert len(result) == 5
+
+
+def test_git_branch_from_worktree(sample_data):
+    w = REGISTRY["git_branch"]()
+    assert w.render(sample_data, _wc("git_branch")) == "feat/python-port"
+
+
+def test_git_branch_empty_when_no_worktree():
+    from ccstatusline.data import StatusData
+    from unittest.mock import patch
+    d = StatusData(cwd="/tmp/notarepo")
+    w = REGISTRY["git_branch"]()
+    with patch("subprocess.run", side_effect=Exception("no git")):
+        assert w.render(d, _wc("git_branch")) == ""
+
+
+def test_git_status_clean():
+    from ccstatusline.data import StatusData
+    from unittest.mock import MagicMock, patch
+    d = StatusData(cwd="/tmp/repo")
+    mock_result = MagicMock()
+    mock_result.stdout = ""
+    w = REGISTRY["git_status"]()
+    with patch("subprocess.run", return_value=mock_result):
+        assert w.render(d, _wc("git_status")) == "✔"
+
+
+def test_git_status_dirty():
+    from ccstatusline.data import StatusData
+    from unittest.mock import MagicMock, patch
+    d = StatusData(cwd="/tmp/repo")
+    mock_result = MagicMock()
+    mock_result.stdout = " M somefile.py\n"
+    w = REGISTRY["git_status"]()
+    with patch("subprocess.run", return_value=mock_result):
+        assert w.render(d, _wc("git_status")) == "✎"
+
+
+def test_git_status_error_returns_empty():
+    from ccstatusline.data import StatusData
+    from unittest.mock import patch
+    d = StatusData()
+    w = REGISTRY["git_status"]()
+    with patch("subprocess.run", side_effect=Exception("no git")):
+        assert w.render(d, _wc("git_status")) == ""
+
+
+def test_session_duration_seconds(sample_data):
+    from ccstatusline.data import StatusData
+    d = StatusData(cost={"total_duration_ms": 45000})
+    w = REGISTRY["session_duration"]()
+    assert w.render(d, _wc("session_duration")) == "45s"
+
+
+def test_session_duration_minutes():
+    from ccstatusline.data import StatusData
+    d = StatusData(cost={"total_duration_ms": 135000})
+    w = REGISTRY["session_duration"]()
+    assert w.render(d, _wc("session_duration")) == "2m15s"
+
+
+def test_session_duration_hours():
+    from ccstatusline.data import StatusData
+    d = StatusData(cost={"total_duration_ms": 3_700_000})
+    w = REGISTRY["session_duration"]()
+    assert w.render(d, _wc("session_duration")) == "1h1m"
+
+
+def test_session_duration_empty():
+    from ccstatusline.data import StatusData
+    w = REGISTRY["session_duration"]()
+    assert w.render(StatusData(), _wc("session_duration")) == ""
+
+
+def test_session_cost(sample_data):
+    w = REGISTRY["session_cost"]()
+    assert w.render(sample_data, _wc("session_cost")) == "$0.0234"
+
+
+def test_session_cost_empty():
+    from ccstatusline.data import StatusData
+    w = REGISTRY["session_cost"]()
+    assert w.render(StatusData(), _wc("session_cost")) == ""
