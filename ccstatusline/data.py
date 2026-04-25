@@ -24,7 +24,9 @@ class StatusData(BaseModel):
     def model_name(self) -> str:
         if isinstance(self.model, dict):
             return self.model.get("display_name") or self.model.get("id") or ""
-        return self.model or ""
+        if isinstance(self.model, str):
+            return self.model
+        return ""
 
     @property
     def tokens_used(self) -> int:
