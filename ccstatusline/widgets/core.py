@@ -1,9 +1,5 @@
 from __future__ import annotations
 
-import json
-import subprocess
-from pathlib import Path
-
 from ccstatusline.data import StatusData
 from ccstatusline.widgets.base import Widget, WidgetConfig, register_widget
 
