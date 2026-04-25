@@ -128,3 +128,43 @@ def test_render_plain_no_powerline_glyphs(sample_data):
     result = render_statusline(c, sample_data)
     assert "" not in result
     assert "" not in result
+
+import json
+import subprocess
+import sys
+
+
+def test_piped_mode_outputs_statusline():
+    """End-to-end: pipe JSON to the entry point, expect successful exit."""
+    data = {
+        "model": {"display_name": "claude-sonnet-4-5"},
+        "context_window": {
+            "context_window_size": 200000,
+            "total_input_tokens": 5000,
+            "total_output_tokens": 1000,
+            "used_percentage": 3.0,
+        },
+        "cost": {"total_cost_usd": 0.01, "total_duration_ms": 60000},
+        "worktree": {"branch": "main"},
+        "cwd": "/tmp",
+    }
+    result = subprocess.run(
+        [sys.executable, "-m", "ccstatusline"],
+        input=json.dumps(data),
+        capture_output=True,
+        text=True,
+        timeout=10,
+    )
+    assert result.returncode == 0
+
+
+def test_piped_mode_invalid_json_exits_cleanly():
+    result = subprocess.run(
+        [sys.executable, "-m", "ccstatusline"],
+        input="not json at all",
+        capture_output=True,
+        text=True,
+        timeout=10,
+    )
+    assert result.returncode == 0
+    assert result.stdout == ""
