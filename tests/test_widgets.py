@@ -180,3 +180,52 @@ def test_session_cost_empty():
     from ccstatusline.data import StatusData
     w = REGISTRY["session_cost"]()
     assert w.render(StatusData(), _wc("session_cost")) == ""
+
+
+def test_cwd_widget_basename(sample_data):
+    w = REGISTRY["cwd"]()
+    assert w.render(sample_data, _wc("cwd")) == "myproject"
+
+
+def test_cwd_widget_full_path(sample_data):
+    w = REGISTRY["cwd"]()
+    assert w.render(sample_data, _wc("cwd", full_path=True)) == "/home/user/myproject"
+
+
+def test_cwd_widget_empty():
+    from ccstatusline.data import StatusData
+    w = REGISTRY["cwd"]()
+    assert w.render(StatusData(), _wc("cwd")) == ""
+
+
+def test_custom_text_widget():
+    from ccstatusline.data import StatusData
+    w = REGISTRY["custom_text"]()
+    assert w.render(StatusData(), _wc("custom_text", text="hello world")) == "hello world"
+
+
+def test_custom_text_widget_empty():
+    from ccstatusline.data import StatusData
+    w = REGISTRY["custom_text"]()
+    assert w.render(StatusData(), _wc("custom_text")) == ""
+
+
+def test_separator_widget_default():
+    from ccstatusline.data import StatusData
+    w = REGISTRY["separator"]()
+    assert w.render(StatusData(), _wc("separator")) == " │ "
+
+
+def test_separator_widget_custom():
+    from ccstatusline.data import StatusData
+    w = REGISTRY["separator"]()
+    assert w.render(StatusData(), _wc("separator", char=" | ")) == " | "
+
+
+def test_claude_email_widget_no_file():
+    from ccstatusline.data import StatusData
+    from unittest.mock import patch
+    from pathlib import Path
+    w = REGISTRY["claude_email"]()
+    with patch.object(Path, "exists", return_value=False):
+        assert w.render(StatusData(), _wc("claude_email")) == ""

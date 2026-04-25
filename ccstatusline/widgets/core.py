@@ -1,6 +1,8 @@
 from __future__ import annotations
 
+import json
 import subprocess
+from pathlib import Path
 
 from ccstatusline.data import StatusData
 from ccstatusline.widgets.base import Widget, WidgetConfig, register_widget
@@ -110,3 +112,55 @@ class SessionCostWidget(Widget):
     def render(self, data: StatusData, config: WidgetConfig) -> str:
         cost = data.cost_usd
         return f"${cost:.4f}" if cost else ""
+
+
+@register_widget("cwd")
+class CwdWidget(Widget):
+    category = "system"
+
+    def render(self, data: StatusData, config: WidgetConfig) -> str:
+        path = data.cwd or ""
+        if not path:
+            return ""
+        if config.options.get("full_path"):
+            return path
+        return Path(path).name
+
+
+@register_widget("claude_email")
+class ClaudeEmailWidget(Widget):
+    category = "system"
+
+    def render(self, data: StatusData, config: WidgetConfig) -> str:
+        try:
+            claude_json = Path.home() / ".claude" / "claude.json"
+            if not claude_json.exists():
+                return ""
+            info = json.loads(claude_json.read_text())
+            for key in ("email", "user_email", "account_email"):
+                if key in info:
+                    return info[key]
+            for key in ("user", "account", "profile"):
+                if isinstance(info.get(key), dict):
+                    email = info[key].get("email", "")
+                    if email:
+                        return email
+        except Exception:
+            pass
+        return ""
+
+
+@register_widget("custom_text")
+class CustomTextWidget(Widget):
+    category = "custom"
+
+    def render(self, data: StatusData, config: WidgetConfig) -> str:
+        return config.options.get("text", "")
+
+
+@register_widget("separator")
+class SeparatorWidget(Widget):
+    category = "custom"
+
+    def render(self, data: StatusData, config: WidgetConfig) -> str:
+        return config.options.get("char", " │ ")
