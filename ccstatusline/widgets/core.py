@@ -43,6 +43,8 @@ class ContextBarWidget(Widget):
     category = "tokens"
 
     def render(self, data: StatusData, config: WidgetConfig) -> str:
+        if not data.context_window:
+            return ""
         width = int(config.options.get("bar_width", 10))
         pct = data.context_used_pct / 100.0
         filled = round(width * pct)
