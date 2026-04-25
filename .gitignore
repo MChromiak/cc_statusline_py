@@ -1,7 +1,11 @@
 .worktrees/
 __pycache__/
 *.py[cod]
+*.pyo
 .venv/
 *.egg-info/
 dist/
+build/
 uv.lock
+.pytest_cache/
+.claude/settings.local.json
