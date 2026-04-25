@@ -1,5 +1,10 @@
+import json
+import tomllib
+from pathlib import Path
+from unittest.mock import patch
+
 import pytest
-from ccstatusline.config import Config, LineConfig, PowerlineConfig
+from ccstatusline.config import LEGACY_JSON_PATH, TOML_PATH, Config, LineConfig, PowerlineConfig, _migrate_from_json
 from ccstatusline.widgets.base import WidgetConfig
 
 
@@ -37,3 +42,84 @@ def test_config_color_level_valid():
 def test_config_color_level_invalid():
     with pytest.raises(Exception):
         Config(color_level="fancy")
+
+
+def test_config_save_and_load(tmp_path):
+    toml_file = tmp_path / "settings.toml"
+    wc = WidgetConfig(type="model", fg="#a6e3a1", bg="#1e1e2e", bold=True)
+    original = Config(
+        color_level="256",
+        lines=[LineConfig(widgets=[wc])],
+    )
+
+    with patch("ccstatusline.config.TOML_PATH", toml_file):
+        original.save()
+        loaded = Config.load()
+
+    assert loaded.color_level == "256"
+    assert loaded.lines[0].widgets[0].type == "model"
+    assert loaded.lines[0].widgets[0].fg == "#a6e3a1"
+    assert loaded.lines[0].widgets[0].bold is True
+
+
+def test_config_save_writes_valid_toml(tmp_path):
+    toml_file = tmp_path / "settings.toml"
+    c = Config(color_level="basic")
+    with patch("ccstatusline.config.TOML_PATH", toml_file):
+        c.save()
+    data = tomllib.loads(toml_file.read_text())
+    assert data["color_level"] == "basic"
+
+
+def test_config_load_returns_default_when_no_file(tmp_path):
+    missing = tmp_path / "nonexistent.toml"
+    missing_json = tmp_path / "nonexistent.json"
+    with patch("ccstatusline.config.TOML_PATH", missing), \
+         patch("ccstatusline.config.LEGACY_JSON_PATH", missing_json):
+        c = Config.load()
+    assert c.color_level == "truecolor"
+    assert c.lines == []
+
+
+def test_migrate_from_json(tmp_path):
+    json_data = {
+        "colorLevel": 2,
+        "minimalistMode": False,
+        "powerline": {
+            "enabled": True,
+            "separator": "",
+            "thinSeparator": "",
+            "leftCap": "",
+            "rightCap": "",
+        },
+        "lines": [
+            [
+                {"type": "Model", "styling": {"fg": "#a6e3a1", "bg": "#1e1e2e", "bold": True}},
+                {"type": "GitBranch", "styling": {"fg": "#cba6f7", "bg": "#1e1e2e"}},
+            ]
+        ],
+    }
+    json_file = tmp_path / "settings.json"
+    json_file.write_text(json.dumps(json_data))
+    result = _migrate_from_json(json_file)
+
+    assert result.color_level == "256"
+    assert result.powerline.enabled is True
+    assert len(result.lines) == 1
+    assert result.lines[0].widgets[0].type == "model"
+    assert result.lines[0].widgets[0].fg == "#a6e3a1"
+    assert result.lines[0].widgets[0].bold is True
+    assert result.lines[0].widgets[1].type == "git_branch"
+
+
+def test_migrate_skips_unknown_widget(tmp_path, capsys):
+    json_data = {
+        "colorLevel": 3,
+        "lines": [[{"type": "UnknownWidget123", "styling": {}}]],
+    }
+    json_file = tmp_path / "settings.json"
+    json_file.write_text(json.dumps(json_data))
+    result = _migrate_from_json(json_file)
+    assert result.lines[0].widgets == []
+    captured = capsys.readouterr()
+    assert "UnknownWidget123" in captured.err
