@@ -184,12 +184,29 @@ def test_render_plain_no_powerline_glyphs(sample_data):
     assert "" not in result
 
 import json
+import os
 import subprocess
 import sys
 
 
-def test_piped_mode_outputs_statusline():
-    """End-to-end: pipe JSON to the entry point, expect successful exit."""
+def _piped_env(home: str) -> dict[str, str]:
+    return {**os.environ, "HOME": home}
+
+
+def test_piped_mode_outputs_statusline(tmp_path):
+    """End-to-end: pipe JSON with a known config, expect rendered widget text in stdout."""
+    cfg_dir = tmp_path / ".config" / "ccstatusline_py"
+    cfg_dir.mkdir(parents=True)
+    (cfg_dir / "settings.toml").write_text(
+        'color_level = "none"\n'
+        "minimalist_mode = true\n"
+        "\n"
+        "[powerline]\n"
+        "enabled = false\n"
+        "\n"
+        "[[lines]]\n"
+        'widgets = [{ type = "model", padding = 0 }]\n'
+    )
     data = {
         "model": {"display_name": "claude-sonnet-4-5"},
         "context_window": {
@@ -208,17 +225,20 @@ def test_piped_mode_outputs_statusline():
         capture_output=True,
         text=True,
         timeout=10,
+        env=_piped_env(str(tmp_path)),
     )
     assert result.returncode == 0
+    assert "claude-sonnet-4-5" in result.stdout
 
 
-def test_piped_mode_invalid_json_exits_cleanly():
+def test_piped_mode_invalid_json_exits_cleanly(tmp_path):
     result = subprocess.run(
         [sys.executable, "-m", "ccstatusline"],
         input="not json at all",
         capture_output=True,
         text=True,
         timeout=10,
+        env=_piped_env(str(tmp_path)),
     )
     assert result.returncode == 0
     assert result.stdout == ""
