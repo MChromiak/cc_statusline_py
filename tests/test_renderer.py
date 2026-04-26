@@ -107,6 +107,60 @@ def test_render_multiple_lines(sample_data):
     assert "$0.0234" in _strip_ansi(lines[1])
 
 
+def test_render_drops_separator_between_empty_widgets():
+    from ccstatusline.config import Config, LineConfig
+    from ccstatusline.data import StatusData
+    from ccstatusline.renderer import render_statusline
+    # model has data, session_cost has none, separator between them, then git_branch
+    # session_cost returns empty → its surrounding separators should also drop
+    widgets = [
+        WidgetConfig(type="model", fg="#fff", bg="#000", padding=1),
+        WidgetConfig(type="separator", fg="#fff", bg="#000", padding=0),
+        WidgetConfig(type="session_cost", fg="#fff", bg="#000", padding=1),
+        WidgetConfig(type="separator", fg="#fff", bg="#000", padding=0),
+        WidgetConfig(type="separator", fg="#fff", bg="#000", padding=0),
+    ]
+    c = Config(lines=[LineConfig(widgets=widgets)], minimalist_mode=True)
+    # session_cost empty (no cost in StatusData), so model + 2 trailing separators
+    # all trailing separators must be dropped
+    d = StatusData(model={"display_name": "X"})
+    result = _strip_ansi(render_statusline(c, d))
+    # Should NOT end with separator glyphs
+    assert "│" not in result, f"expected no leftover separators, got: {result!r}"
+
+
+def test_render_collapses_consecutive_separators():
+    from ccstatusline.config import Config, LineConfig
+    from ccstatusline.data import StatusData
+    from ccstatusline.renderer import render_statusline
+    widgets = [
+        WidgetConfig(type="model", fg="#fff", bg="#000", padding=0),
+        WidgetConfig(type="separator", fg="#fff", bg="#000", padding=0),
+        WidgetConfig(type="separator", fg="#fff", bg="#000", padding=0),
+        WidgetConfig(type="separator", fg="#fff", bg="#000", padding=0),
+        WidgetConfig(type="session_cost", fg="#fff", bg="#000", padding=0),
+    ]
+    c = Config(lines=[LineConfig(widgets=widgets)], minimalist_mode=True)
+    d = StatusData(model={"display_name": "X"}, cost={"total_cost_usd": 0.5})
+    result = _strip_ansi(render_statusline(c, d))
+    # 3 consecutive separators must collapse to exactly 1
+    assert result.count("│") == 1, f"expected 1 separator, got: {result!r}"
+
+
+def test_render_drops_leading_separator():
+    from ccstatusline.config import Config, LineConfig
+    from ccstatusline.data import StatusData
+    from ccstatusline.renderer import render_statusline
+    widgets = [
+        WidgetConfig(type="separator", fg="#fff", bg="#000", padding=0),
+        WidgetConfig(type="model", fg="#fff", bg="#000", padding=0),
+    ]
+    c = Config(lines=[LineConfig(widgets=widgets)], minimalist_mode=True)
+    d = StatusData(model={"display_name": "X"})
+    result = _strip_ansi(render_statusline(c, d))
+    assert "│" not in result, f"expected no leading separator, got: {result!r}"
+
+
 def test_render_powerline_contains_separator_glyph(sample_data):
     wc1 = WidgetConfig(type="model", fg="#ffffff", bg="#1e1e2e", padding=1)
     wc2 = WidgetConfig(type="session_cost", fg="#ffffff", bg="#313244", padding=1)

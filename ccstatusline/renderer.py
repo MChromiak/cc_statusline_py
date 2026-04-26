@@ -101,13 +101,34 @@ def _wrap_segment(text: str, wc: WidgetConfig, color_level: str) -> str:
     return f"{bg}{fg}{bold}{content}{RESET}"
 
 
+def _trim_separators(
+    segments: list[tuple[str, WidgetConfig]],
+) -> list[tuple[str, WidgetConfig]]:
+    active = [(t, w) for t, w in segments if t]
+    # Drop leading/trailing separators
+    while active and active[0][1].type == "separator":
+        active.pop(0)
+    while active and active[-1][1].type == "separator":
+        active.pop()
+    # Collapse runs of consecutive separators to a single one
+    deduped: list[tuple[str, WidgetConfig]] = []
+    for text, wc in active:
+        if (
+            wc.type == "separator"
+            and deduped
+            and deduped[-1][1].type == "separator"
+        ):
+            continue
+        deduped.append((text, wc))
+    return deduped
+
+
 def _render_plain(
     segments: list[tuple[str, WidgetConfig]], color_level: str
 ) -> str:
     return "".join(
         _wrap_segment(text, wc, color_level)
-        for text, wc in segments
-        if text
+        for text, wc in _trim_separators(segments)
     )
 
 
@@ -118,7 +139,7 @@ def _render_powerline(
     left_cap: str,
     right_cap: str,
 ) -> str:
-    active = [(text, wc) for text, wc in segments if text]
+    active = _trim_separators(segments)
     if not active:
         return ""
 
