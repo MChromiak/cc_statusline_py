@@ -87,16 +87,20 @@ def test_context_pct_widget_empty():
 
 
 def test_context_bar_widget_default_width(sample_data):
+    from ccstatusline.renderer import visible_len
+    import re
     w = REGISTRY["context_bar"]()
     result = w.render(sample_data, _wc("context_bar"))
-    assert len(result) == 10
-    assert result.startswith("█") or result.startswith("░")
+    assert visible_len(result) == 10
+    stripped = re.sub(r"\x1b\[[0-9;]*m", "", result)
+    assert stripped.startswith("█") or stripped.startswith("░")
 
 
 def test_context_bar_widget_custom_width(sample_data):
+    from ccstatusline.renderer import visible_len
     w = REGISTRY["context_bar"]()
     result = w.render(sample_data, _wc("context_bar", bar_width=5))
-    assert len(result) == 5
+    assert visible_len(result) == 5
 
 
 def test_git_branch_from_worktree(sample_data):
