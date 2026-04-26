@@ -363,21 +363,21 @@ def test_session_name_widget_empty():
     assert w.render(StatusData(), _wc("session_name")) == ""
 
 
-def test_thinking_effort_widget_top_level():
-    d = StatusData.model_validate({"thinking_effort": "high"})
+def test_thinking_effort_widget_from_effort_level():
+    d = StatusData(effort={"level": "high"})
     w = REGISTRY["thinking_effort"]()
     assert w.render(d, _wc("thinking_effort")) == "high"
 
 
-def test_thinking_effort_widget_inside_model():
-    d = StatusData(model={"id": "x", "thinking_effort": "medium"})
-    w = REGISTRY["thinking_effort"]()
-    assert w.render(d, _wc("thinking_effort")) == "medium"
-
-
-def test_thinking_effort_widget_empty():
+def test_thinking_effort_widget_empty_when_no_effort_field():
     w = REGISTRY["thinking_effort"]()
     assert w.render(StatusData(), _wc("thinking_effort")) == ""
+
+
+def test_thinking_effort_widget_empty_when_effort_has_no_level():
+    d = StatusData(effort={"foo": "bar"})
+    w = REGISTRY["thinking_effort"]()
+    assert w.render(d, _wc("thinking_effort")) == ""
 
 
 def test_block_reset_timer_five_hour_default_window():
@@ -426,6 +426,20 @@ def test_block_reset_timer_already_elapsed_returns_empty():
 
 def test_block_reset_timer_malformed_timestamp_returns_empty():
     d = StatusData(rate_limits={"five_hour": {"resets_at": "not-a-date"}})
+    w = REGISTRY["block_reset_timer"]()
+    assert w.render(d, _wc("block_reset_timer")) == ""
+
+
+def test_block_reset_timer_unix_timestamp():
+    import time
+    d = StatusData(rate_limits={"five_hour": {"resets_at": int(time.time()) + 90}})
+    w = REGISTRY["block_reset_timer"]()
+    result = w.render(d, _wc("block_reset_timer"))
+    assert result.endswith("s") or result.endswith("m")
+
+
+def test_block_reset_timer_unix_timestamp_already_past():
+    d = StatusData(rate_limits={"five_hour": {"resets_at": 1000000}})
     w = REGISTRY["block_reset_timer"]()
     assert w.render(d, _wc("block_reset_timer")) == ""
 

@@ -12,7 +12,8 @@ class StatusData(BaseModel):
     cwd: str | None = None
     model: str | dict | None = None
     version: str | None = None
-    output_style: str | None = None
+    output_style: str | dict | None = None
+    effort: dict | None = None
     workspace: dict | None = None
     cost: dict | None = None
     context_window: dict | None = None

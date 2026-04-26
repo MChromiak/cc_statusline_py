@@ -278,14 +278,8 @@ class ThinkingEffortWidget(Widget):
     category = "session"
 
     def render(self, data: StatusData, config: WidgetConfig, color_level: str = "truecolor") -> str:
-        extras = data.model_extra or {}
-        for key in ("thinking_effort", "thinkingEffort", "thinking"):
-            if extras.get(key):
-                return str(extras[key])
-        if isinstance(data.model, dict):
-            for key in ("thinking_effort", "thinkingEffort", "thinking"):
-                if data.model.get(key):
-                    return str(data.model[key])
+        if isinstance(data.effort, dict) and data.effort.get("level"):
+            return str(data.effort["level"])
         return ""
 
 
@@ -315,10 +309,12 @@ class BlockResetTimerWidget(Widget):
         return f"{secs}s"
 
     @staticmethod
-    def _seconds_until(iso_str: str) -> float | None:
+    def _seconds_until(resets_at) -> float | None:
         from datetime import datetime, timezone
+        if isinstance(resets_at, (int, float)):
+            return float(resets_at) - datetime.now(timezone.utc).timestamp()
         try:
-            ts = str(iso_str).replace("Z", "+00:00")
+            ts = str(resets_at).replace("Z", "+00:00")
             target = datetime.fromisoformat(ts)
             if target.tzinfo is None:
                 target = target.replace(tzinfo=timezone.utc)
