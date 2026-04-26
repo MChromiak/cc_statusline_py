@@ -103,6 +103,8 @@ class GitStatusWidget(Widget):
                 timeout=2,
                 cwd=data.cwd or None,
             )
+            if result.returncode != 0:
+                return ""
             return "✎" if result.stdout.strip() else "✔"
         except Exception:
             return ""

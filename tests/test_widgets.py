@@ -122,6 +122,7 @@ def test_git_status_clean():
     from unittest.mock import MagicMock, patch
     d = StatusData(cwd="/tmp/repo")
     mock_result = MagicMock()
+    mock_result.returncode = 0
     mock_result.stdout = ""
     w = REGISTRY["git_status"]()
     with patch("subprocess.run", return_value=mock_result):
@@ -133,6 +134,7 @@ def test_git_status_dirty():
     from unittest.mock import MagicMock, patch
     d = StatusData(cwd="/tmp/repo")
     mock_result = MagicMock()
+    mock_result.returncode = 0
     mock_result.stdout = " M somefile.py\n"
     w = REGISTRY["git_status"]()
     with patch("subprocess.run", return_value=mock_result):
@@ -145,6 +147,19 @@ def test_git_status_error_returns_empty():
     d = StatusData()
     w = REGISTRY["git_status"]()
     with patch("subprocess.run", side_effect=Exception("no git")):
+        assert w.render(d, _wc("git_status")) == ""
+
+
+def test_git_status_returns_empty_when_not_a_git_repo():
+    """git exits nonzero with empty stdout outside a repo; do not falsely render clean."""
+    from ccstatusline.data import StatusData
+    from unittest.mock import MagicMock, patch
+    d = StatusData(cwd="/tmp/notarepo")
+    mock_result = MagicMock()
+    mock_result.returncode = 128
+    mock_result.stdout = ""
+    w = REGISTRY["git_status"]()
+    with patch("subprocess.run", return_value=mock_result):
         assert w.render(d, _wc("git_status")) == ""
 
 
