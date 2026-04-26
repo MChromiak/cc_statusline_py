@@ -1,4 +1,4 @@
-# ccstatusline_py
+# ccstatusline-py
 
 A Python/uv port of [ccstatusline](https://github.com/sirmalloc/ccstatusline) â€” customizable statusline for Claude Code CLI. No Node.js required.
 
@@ -7,7 +7,7 @@ A Python/uv port of [ccstatusline](https://github.com/sirmalloc/ccstatusline) â€
 Once published to PyPI:
 
 ```bash
-uvx ccstatusline
+uvx --from ccstatusline-py ccstatusline
 ```
 
 In the meantime, install the latest from GitHub:
