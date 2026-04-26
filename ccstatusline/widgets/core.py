@@ -296,7 +296,14 @@ class BlockResetTimerWidget(Widget):
     def render(self, data: StatusData, config: WidgetConfig, color_level: str = "truecolor") -> str:
         if not data.rate_limits:
             return ""
-        seconds = self._seconds_until_reset(data.rate_limits)
+        window = config.options.get("window", "five_hour")
+        bucket = data.rate_limits.get(window)
+        if not isinstance(bucket, dict):
+            return ""
+        resets_at = bucket.get("resets_at")
+        if not resets_at:
+            return ""
+        seconds = self._seconds_until(resets_at)
         if seconds is None or seconds <= 0:
             return ""
         mins, secs = divmod(int(seconds), 60)
@@ -308,28 +315,16 @@ class BlockResetTimerWidget(Widget):
         return f"{secs}s"
 
     @staticmethod
-    def _seconds_until_reset(rate_limits: dict) -> float | None:
-        if "reset_seconds" in rate_limits:
-            try:
-                return float(rate_limits["reset_seconds"])
-            except (TypeError, ValueError):
-                return None
+    def _seconds_until(iso_str: str) -> float | None:
         from datetime import datetime, timezone
-        if "reset_at_unix" in rate_limits:
-            try:
-                return float(rate_limits["reset_at_unix"]) - datetime.now(timezone.utc).timestamp()
-            except (TypeError, ValueError):
-                return None
-        if "reset_at" in rate_limits:
-            try:
-                ts = str(rate_limits["reset_at"]).replace("Z", "+00:00")
-                target = datetime.fromisoformat(ts)
-                if target.tzinfo is None:
-                    target = target.replace(tzinfo=timezone.utc)
-                return (target - datetime.now(timezone.utc)).total_seconds()
-            except Exception:
-                return None
-        return None
+        try:
+            ts = str(iso_str).replace("Z", "+00:00")
+            target = datetime.fromisoformat(ts)
+            if target.tzinfo is None:
+                target = target.replace(tzinfo=timezone.utc)
+            return (target - datetime.now(timezone.utc)).total_seconds()
+        except Exception:
+            return None
 
 
 @register_widget("vim_mode")

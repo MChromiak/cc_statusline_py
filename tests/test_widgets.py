@@ -380,48 +380,52 @@ def test_thinking_effort_widget_empty():
     assert w.render(StatusData(), _wc("thinking_effort")) == ""
 
 
-def test_block_reset_timer_widget_seconds():
-    d = StatusData(rate_limits={"reset_seconds": 125})
-    w = REGISTRY["block_reset_timer"]()
-    assert w.render(d, _wc("block_reset_timer")) == "2m5s"
-
-
-def test_block_reset_timer_widget_hours():
-    d = StatusData(rate_limits={"reset_seconds": 3700})
-    w = REGISTRY["block_reset_timer"]()
-    assert w.render(d, _wc("block_reset_timer")) == "1h1m"
-
-
-def test_block_reset_timer_widget_just_seconds():
-    d = StatusData(rate_limits={"reset_seconds": 45})
-    w = REGISTRY["block_reset_timer"]()
-    assert w.render(d, _wc("block_reset_timer")) == "45s"
-
-
-def test_block_reset_timer_widget_unix_timestamp():
-    import time
-    d = StatusData(rate_limits={"reset_at_unix": time.time() + 90})
-    w = REGISTRY["block_reset_timer"]()
-    result = w.render(d, _wc("block_reset_timer"))
-    assert result.endswith("s") or result.endswith("m")
-
-
-def test_block_reset_timer_widget_iso8601():
+def test_block_reset_timer_five_hour_default_window():
     from datetime import datetime, timezone, timedelta
-    target = datetime.now(timezone.utc) + timedelta(minutes=5)
-    d = StatusData(rate_limits={"reset_at": target.isoformat()})
+    target = datetime.now(timezone.utc) + timedelta(minutes=30)
+    d = StatusData(rate_limits={
+        "five_hour": {"used_percentage": 40, "resets_at": target.isoformat()},
+        "seven_day": {"used_percentage": 10, "resets_at": "2030-01-01T00:00:00Z"},
+    })
     w = REGISTRY["block_reset_timer"]()
     result = w.render(d, _wc("block_reset_timer"))
     assert "m" in result
+    assert "h" not in result
 
 
-def test_block_reset_timer_widget_no_data_returns_empty():
+def test_block_reset_timer_seven_day_via_option():
+    from datetime import datetime, timezone, timedelta
+    target = datetime.now(timezone.utc) + timedelta(hours=2, minutes=30)
+    d = StatusData(rate_limits={
+        "five_hour": {"resets_at": "2030-01-01T00:00:00Z"},
+        "seven_day": {"resets_at": target.isoformat()},
+    })
+    w = REGISTRY["block_reset_timer"]()
+    result = w.render(d, _wc("block_reset_timer", window="seven_day"))
+    assert result.startswith("2h")
+
+
+def test_block_reset_timer_no_rate_limits_returns_empty():
     w = REGISTRY["block_reset_timer"]()
     assert w.render(StatusData(), _wc("block_reset_timer")) == ""
 
 
-def test_block_reset_timer_widget_already_elapsed_returns_empty():
-    d = StatusData(rate_limits={"reset_seconds": -10})
+def test_block_reset_timer_missing_window_bucket_returns_empty():
+    d = StatusData(rate_limits={"seven_day": {"resets_at": "2030-01-01T00:00:00Z"}})
+    w = REGISTRY["block_reset_timer"]()
+    assert w.render(d, _wc("block_reset_timer")) == ""
+
+
+def test_block_reset_timer_already_elapsed_returns_empty():
+    d = StatusData(rate_limits={
+        "five_hour": {"resets_at": "2020-01-01T00:00:00Z"},
+    })
+    w = REGISTRY["block_reset_timer"]()
+    assert w.render(d, _wc("block_reset_timer")) == ""
+
+
+def test_block_reset_timer_malformed_timestamp_returns_empty():
+    d = StatusData(rate_limits={"five_hour": {"resets_at": "not-a-date"}})
     w = REGISTRY["block_reset_timer"]()
     assert w.render(d, _wc("block_reset_timer")) == ""
 
