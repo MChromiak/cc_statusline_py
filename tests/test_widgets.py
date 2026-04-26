@@ -512,3 +512,34 @@ def test_context_bar_high_pct_emits_red():
     w = REGISTRY["context_bar"]()
     result = w.render(d, _wc("context_bar"), color_level="truecolor")
     assert "\x1b[38;2;255;0;0m" in result
+
+
+def test_context_bar_custom_thresholds_yellow_at_80pct():
+    d = StatusData(context_window={
+        "context_window_size": 200_000,
+        "total_input_tokens": 160_000,
+        "total_output_tokens": 0,
+        "used_percentage": 80.0,
+    })
+    w = REGISTRY["context_bar"]()
+    result = w.render(
+        d,
+        _wc("context_bar", warning_threshold=70.0, critical_threshold=90.0),
+        color_level="truecolor",
+    )
+    assert "\x1b[38;2;255;255;0m" in result
+    assert "\x1b[38;2;255;0;0m" not in result
+
+
+def test_context_bar_color_level_none_returns_monochrome():
+    d = StatusData(context_window={
+        "context_window_size": 200_000,
+        "total_input_tokens": 100_000,
+        "total_output_tokens": 0,
+        "used_percentage": 50.0,
+    })
+    w = REGISTRY["context_bar"]()
+    result = w.render(d, _wc("context_bar"), color_level="none")
+    assert "\x1b" not in result
+    assert "█" in result
+    assert "░" in result
