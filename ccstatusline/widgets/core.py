@@ -46,9 +46,28 @@ class ContextBarWidget(Widget):
         if not data.context_window:
             return ""
         width = int(config.options.get("bar_width", 10))
-        pct = data.context_used_pct / 100.0
+        pct_value = data.context_used_pct
+        pct = pct_value / 100.0
         filled = round(width * pct)
-        return "█" * filled + "░" * (width - filled)
+        filled_chars = "█" * filled
+        unfilled_chars = "░" * (width - filled)
+
+        if color_level == "none":
+            return filled_chars + unfilled_chars
+
+        warning = float(config.options.get("warning_threshold", 50.0))
+        critical = float(config.options.get("critical_threshold", 80.0))
+        if pct_value >= critical:
+            threshold_hex = "#ff0000"
+        elif pct_value >= warning:
+            threshold_hex = "#ffff00"
+        else:
+            threshold_hex = "#00ff00"
+
+        from ccstatusline.renderer import ansi_fg
+        threshold_fg = ansi_fg(threshold_hex, color_level)
+        restore_fg = ansi_fg(config.fg, color_level)
+        return f"{threshold_fg}{filled_chars}{restore_fg}{unfilled_chars}"
 
 
 @register_widget("git_branch")

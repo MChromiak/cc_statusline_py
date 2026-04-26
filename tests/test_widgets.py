@@ -476,3 +476,39 @@ def test_burn_rate_zero_duration_returns_empty():
 def test_burn_rate_missing_cost_returns_empty():
     w = REGISTRY["burn_rate"]()
     assert w.render(StatusData(), _wc("burn_rate")) == ""
+
+
+def test_context_bar_low_pct_emits_green():
+    d = StatusData(context_window={
+        "context_window_size": 200_000,
+        "total_input_tokens": 60_000,
+        "total_output_tokens": 0,
+        "used_percentage": 30.0,
+    })
+    w = REGISTRY["context_bar"]()
+    result = w.render(d, _wc("context_bar"), color_level="truecolor")
+    assert "\x1b[38;2;0;255;0m" in result
+
+
+def test_context_bar_mid_pct_emits_yellow():
+    d = StatusData(context_window={
+        "context_window_size": 200_000,
+        "total_input_tokens": 130_000,
+        "total_output_tokens": 0,
+        "used_percentage": 65.0,
+    })
+    w = REGISTRY["context_bar"]()
+    result = w.render(d, _wc("context_bar"), color_level="truecolor")
+    assert "\x1b[38;2;255;255;0m" in result
+
+
+def test_context_bar_high_pct_emits_red():
+    d = StatusData(context_window={
+        "context_window_size": 200_000,
+        "total_input_tokens": 180_000,
+        "total_output_tokens": 0,
+        "used_percentage": 90.0,
+    })
+    w = REGISTRY["context_bar"]()
+    result = w.render(d, _wc("context_bar"), color_level="truecolor")
+    assert "\x1b[38;2;255;0;0m" in result
