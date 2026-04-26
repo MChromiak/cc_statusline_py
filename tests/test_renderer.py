@@ -222,3 +222,15 @@ def test_piped_mode_invalid_json_exits_cleanly():
     )
     assert result.returncode == 0
     assert result.stdout == ""
+
+
+def test_render_survives_invalid_color_in_config(sample_data):
+    """A bad fg/bg must not raise — statusline should still render the widget text."""
+    wc = WidgetConfig(type="model", fg="not-a-color", bg="also-bad", padding=0)
+    c = Config(
+        lines=[LineConfig(widgets=[wc])],
+        powerline=PowerlineConfig(enabled=False),
+        minimalist_mode=True,
+    )
+    result = render_statusline(c, sample_data)
+    assert "claude-sonnet-4-5" in _strip_ansi(result)
