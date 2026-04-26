@@ -4,7 +4,7 @@ from pathlib import Path
 from unittest.mock import patch
 
 import pytest
-from ccstatusline.config import LEGACY_JSON_PATH, TOML_PATH, Config, LineConfig, PowerlineConfig, _migrate_from_json
+from ccstatusline.config import LEGACY_JSON_PATH, LEGACY_TOML_PATH, TOML_PATH, Config, LineConfig, PowerlineConfig, _migrate_from_json
 from ccstatusline.widgets.base import WidgetConfig
 
 
@@ -73,12 +73,35 @@ def test_config_save_writes_valid_toml(tmp_path):
 
 def test_config_load_returns_default_when_no_file(tmp_path):
     missing = tmp_path / "nonexistent.toml"
+    missing_legacy_toml = tmp_path / "nonexistent_legacy.toml"
     missing_json = tmp_path / "nonexistent.json"
     with patch("ccstatusline.config.TOML_PATH", missing), \
+         patch("ccstatusline.config.LEGACY_TOML_PATH", missing_legacy_toml), \
          patch("ccstatusline.config.LEGACY_JSON_PATH", missing_json):
         c = Config.load()
     assert c.color_level == "truecolor"
     assert c.lines == []
+
+
+def test_config_load_migrates_legacy_underscore_toml(tmp_path):
+    import tomli_w
+
+    new_path = tmp_path / "new" / "settings.toml"
+    legacy_path = tmp_path / "legacy" / "settings.toml"
+    missing_json = tmp_path / "nonexistent.json"
+
+    legacy_path.parent.mkdir(parents=True)
+    legacy = Config(color_level="basic", lines=[LineConfig(widgets=[WidgetConfig(type="model")])])
+    legacy_path.write_bytes(tomli_w.dumps(legacy.model_dump()).encode())
+
+    with patch("ccstatusline.config.TOML_PATH", new_path), \
+         patch("ccstatusline.config.LEGACY_TOML_PATH", legacy_path), \
+         patch("ccstatusline.config.LEGACY_JSON_PATH", missing_json):
+        loaded = Config.load()
+
+    assert loaded.color_level == "basic"
+    assert loaded.lines[0].widgets[0].type == "model"
+    assert new_path.exists(), "migration should write the config to the new path"
 
 
 def test_migrate_from_json(tmp_path):

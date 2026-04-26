@@ -4,19 +4,23 @@ A Python/uv port of [ccstatusline](https://github.com/sirmalloc/ccstatusline) �
 
 ## Installation
 
-Once published to PyPI:
+Install from PyPI with uv (recommended) — puts a `ccstatusline` binary on your PATH:
+
+```bash
+uv tool install ccstatusline-py
+```
+
+Or run it ad-hoc without installing:
 
 ```bash
 uvx --from ccstatusline-py ccstatusline
 ```
 
-In the meantime, install the latest from GitHub:
+To install the latest unreleased version directly from GitHub:
 
 ```bash
 uv tool install --python 3.11 git+https://github.com/MChromiak/cc_statusline_py.git
 ```
-
-Either path puts a `ccstatusline` binary on your PATH.
 
 ## Claude Code integration
 
@@ -32,7 +36,7 @@ Add to `~/.claude/settings.json`:
 }
 ```
 
-(Use `uvx ccstatusline` instead of `ccstatusline` if you installed via `uvx`.)
+(If you didn't `uv tool install` and want to run on demand, use `"command": "uvx --from ccstatusline-py ccstatusline"` instead.)
 
 ## Configuration
 
@@ -42,11 +46,13 @@ Run interactively to configure visually:
 ccstatusline
 ```
 
-Config is saved to `~/.config/ccstatusline_py/settings.toml`. If you already have a config from the original ccstatusline, it will be migrated automatically on first run.
+(If you didn't `uv tool install`, use `uvx --from ccstatusline-py ccstatusline` instead.)
+
+Config is saved to `~/.config/ccstatusline-py/settings.toml`. Existing configs from the original ccstatusline (JSON) or from earlier `ccstatusline_py/` (underscore) installs are migrated automatically on first run.
 
 ## Examples
 
-Each example below is a complete `~/.config/ccstatusline_py/settings.toml`. Available widget types include `model`, `cwd`, `git_branch`, `git_status`, `context_pct`, `context_bar`, `session_cost`, `session_duration`, `tokens_used`, `burn_rate`, `block_reset_timer`, `separator`, and more.
+Each example below is a complete `~/.config/ccstatusline-py/settings.toml`. Available widget types include `model`, `cwd`, `git_branch`, `git_status`, `context_pct`, `context_bar`, `session_cost`, `session_duration`, `tokens_used`, `burn_rate`, `block_reset_timer`, `separator`, and more.
 
 ### 1. Minimal — model name and git branch
 
@@ -129,7 +135,7 @@ Renders two lines:
 
 ```
 claude-sonnet-4-5  │  42.5%  │  $0.0234
-cc_statusline_py  │  main ✔
+~/projects/myapp  │  main ✔
 ```
 
 ## Requirements

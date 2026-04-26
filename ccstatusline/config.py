@@ -11,7 +11,8 @@ from pydantic import BaseModel, Field
 
 from ccstatusline.widgets.base import WidgetConfig
 
-TOML_PATH = Path.home() / ".config" / "ccstatusline_py" / "settings.toml"
+TOML_PATH = Path.home() / ".config" / "ccstatusline-py" / "settings.toml"
+LEGACY_TOML_PATH = Path.home() / ".config" / "ccstatusline_py" / "settings.toml"
 LEGACY_JSON_PATH = Path.home() / ".config" / "ccstatusline" / "settings.json"
 
 _COLOR_LEVEL_MAP: dict[int, str] = {0: "none", 1: "basic", 2: "256", 3: "truecolor"}
@@ -72,6 +73,15 @@ class Config(BaseModel):
             except Exception as e:
                 print(f"ccstatusline: failed to load config: {e}", file=sys.stderr)
                 return cls()
+
+        if LEGACY_TOML_PATH.exists():
+            try:
+                data = tomllib.loads(LEGACY_TOML_PATH.read_text())
+                migrated = cls.model_validate(data)
+                migrated.save()
+                return migrated
+            except Exception as e:
+                print(f"ccstatusline: failed to migrate legacy TOML config: {e}", file=sys.stderr)
 
         if LEGACY_JSON_PATH.exists():
             try:
