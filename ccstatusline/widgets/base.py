@@ -17,6 +17,7 @@ _HEX_COLOR_RE = re.compile(r"^#?(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$")
 
 class WidgetConfig(BaseModel):
     type: str
+    prefix: str | None = None
     fg: str = "#ffffff"
     bg: str = "#000000"
     bold: bool = False

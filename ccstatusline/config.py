@@ -95,7 +95,7 @@ class Config(BaseModel):
 
     def save(self) -> None:
         TOML_PATH.parent.mkdir(parents=True, exist_ok=True)
-        TOML_PATH.write_bytes(tomli_w.dumps(self.model_dump()).encode())
+        TOML_PATH.write_bytes(tomli_w.dumps(self.model_dump(exclude_none=True)).encode())
 
 
 def _migrate_from_json(path: Path) -> Config:

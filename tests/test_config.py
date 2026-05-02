@@ -8,6 +8,21 @@ from ccstatusline.config import LEGACY_JSON_PATH, LEGACY_TOML_PATH, TOML_PATH, C
 from ccstatusline.widgets.base import WidgetConfig
 
 
+def test_widget_config_prefix_defaults_to_none():
+    wc = WidgetConfig(type="model")
+    assert wc.prefix is None
+
+
+def test_widget_config_prefix_accepts_empty_string():
+    wc = WidgetConfig(type="model", prefix="")
+    assert wc.prefix == ""
+
+
+def test_widget_config_prefix_accepts_custom_string():
+    wc = WidgetConfig(type="model", prefix="[m] ")
+    assert wc.prefix == "[m] "
+
+
 def test_powerline_config_defaults():
     pl = PowerlineConfig()
     assert pl.enabled is True
@@ -92,7 +107,7 @@ def test_config_load_migrates_legacy_underscore_toml(tmp_path):
 
     legacy_path.parent.mkdir(parents=True)
     legacy = Config(color_level="basic", lines=[LineConfig(widgets=[WidgetConfig(type="model")])])
-    legacy_path.write_bytes(tomli_w.dumps(legacy.model_dump()).encode())
+    legacy_path.write_bytes(tomli_w.dumps(legacy.model_dump(exclude_none=True)).encode())
 
     with patch("ccstatusline.config.TOML_PATH", new_path), \
          patch("ccstatusline.config.LEGACY_TOML_PATH", legacy_path), \
