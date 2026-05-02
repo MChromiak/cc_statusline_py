@@ -3,6 +3,14 @@ from ccstatusline.data import StatusData
 from ccstatusline.widgets.base import REGISTRY, CATEGORIES, Widget, WidgetConfig, register_widget
 
 
+def test_widget_base_has_empty_default_prefix():
+    class _SampleWidget(Widget):
+        def render(self, data, config, color_level="truecolor"):
+            return ""
+
+    assert _SampleWidget.default_prefix == ""
+
+
 def test_register_widget_adds_to_registry():
     @register_widget("_test_widget")
     class MyWidget(Widget):

@@ -43,6 +43,7 @@ def register_widget(name: str):
 
 class Widget(ABC):
     category: str = "custom"
+    default_prefix: str = ""
 
     @abstractmethod
     def render(
