@@ -50,6 +50,21 @@ ccstatusline
 
 Config is saved to `~/.config/ccstatusline-py/settings.toml`. Existing configs from the original ccstatusline (JSON) or from earlier `ccstatusline_py/` (underscore) installs are migrated automatically on first run.
 
+### Customising widget labels
+
+Every widget supports an optional `prefix` field that controls the icon/label shown before its value:
+
+```toml
+[[lines]]
+widgets = [
+  { type = "session_cost", prefix = "$ " },     # custom prefix
+  { type = "git_branch",   prefix = "" },        # no prefix
+  { type = "model" },                            # widget default
+]
+```
+
+To turn the built-in icons off everywhere, set `minimalist_mode = true` at the top level or `color_level = "none"`.
+
 ## Examples
 
 Each example below is a complete `~/.config/ccstatusline-py/settings.toml`. Available widget types include `model`, `cwd`, `git_branch`, `git_status`, `context_pct`, `context_bar`, `session_cost`, `session_duration`, `tokens_used`, `burn_rate`, `block_reset_timer`, `separator`, and more.
@@ -104,6 +119,8 @@ Renders coloured powerline-style segments:
 ```
 
 (With a Nerd Font, the segment caps are rendered as connected arrows.)
+
+Every data-bearing widget ships a built-in Nerd Font icon plus a short label (e.g. ` Model: …`, ` Branch: …`, ` Cost: …`), so the rendered output is closer to ` Model: claude-sonnet-4-5  Branch: main   Ctx ████░░░░░░  Cost: $0.0234`. Defaults are hidden automatically when `minimalist_mode = true` or `color_level = "none"`. See "Customising widget labels" below to override or disable per widget.
 
 ### 3. Two-line — overview line + project line
 
