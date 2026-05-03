@@ -170,6 +170,14 @@ def _render_powerline(
     return "".join(parts)
 
 
+def _resolve_prefix(widget_cls, wc: WidgetConfig, config: Config) -> str:
+    if wc.prefix is not None:
+        return wc.prefix
+    if config.minimalist_mode or config.color_level == "none":
+        return ""
+    return widget_cls.default_prefix
+
+
 def render_statusline(config: Config, data: StatusData) -> str:
     if not config.lines:
         return ""
@@ -187,6 +195,8 @@ def render_statusline(config: Config, data: StatusData) -> str:
                 text = cls().render(data, wc, config.color_level)
             except Exception:
                 text = ""
+            if text:
+                text = _resolve_prefix(cls, wc, config) + text
             segments.append((text, wc))
 
         if config.powerline.enabled:

@@ -254,3 +254,54 @@ def test_render_survives_invalid_color_in_config(sample_data):
     )
     result = render_statusline(c, sample_data)
     assert "claude-sonnet-4-5" in _strip_ansi(result)
+
+
+def _cost_config(prefix=None, *, minimalist=False, color_level="truecolor"):
+    return Config(
+        color_level=color_level,
+        minimalist_mode=minimalist,
+        powerline=PowerlineConfig(enabled=False),
+        lines=[LineConfig(widgets=[WidgetConfig(type="session_cost", prefix=prefix)])],
+    )
+
+
+def test_renderer_applies_widget_default_prefix(sample_data):
+    out = _strip_ansi(render_statusline(_cost_config(prefix=None), sample_data))
+    assert " Cost: $0.0234" in out
+
+
+def test_renderer_smart_default_skips_prefix_in_minimalist_mode(sample_data):
+    out = _strip_ansi(render_statusline(_cost_config(prefix=None, minimalist=True), sample_data))
+    assert "$0.0234" in out
+    assert " Cost: " not in out
+
+
+def test_renderer_smart_default_skips_prefix_when_color_level_none(sample_data):
+    out = _strip_ansi(render_statusline(_cost_config(prefix=None, color_level="none"), sample_data))
+    assert "$0.0234" in out
+    assert " Cost: " not in out
+
+
+def test_renderer_user_empty_prefix_overrides_default(sample_data):
+    out = _strip_ansi(render_statusline(_cost_config(prefix=""), sample_data))
+    assert "$0.0234" in out
+    assert " Cost: " not in out
+
+
+def test_renderer_user_custom_prefix_replaces_default(sample_data):
+    out = _strip_ansi(render_statusline(_cost_config(prefix="[c] "), sample_data))
+    assert "[c] $0.0234" in out
+    assert " Cost: " not in out
+
+
+def test_renderer_skips_prefix_when_widget_value_empty():
+    from ccstatusline.data import StatusData
+
+    config = Config(
+        color_level="truecolor",
+        powerline=PowerlineConfig(enabled=False),
+        lines=[LineConfig(widgets=[WidgetConfig(type="session_cost", prefix=None)])],
+    )
+    data_no_cost = StatusData(model={"display_name": "x", "id": "x"})
+    out = _strip_ansi(render_statusline(config, data_no_cost))
+    assert " Cost: " not in out
