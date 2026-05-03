@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "ccstatusline-py"
-version = "0.1.1"
+version = "0.1.2"
 description = "Customizable statusline formatter for Claude Code CLI"
 readme = "README.md"
 license = { text = "MIT" }
