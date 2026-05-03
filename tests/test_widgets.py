@@ -11,6 +11,39 @@ def test_widget_base_has_empty_default_prefix():
     assert _SampleWidget.default_prefix == ""
 
 
+@pytest.mark.parametrize(
+    "widget_type,expected_prefix",
+    [
+        ("model",             " Model: "),
+        ("cwd",               " Dir: "),
+        ("git_branch",        " Branch: "),
+        ("git_status",        " Status: "),
+        ("git_sha",           " SHA: "),
+        ("git_ahead",         ""),
+        ("git_behind",        ""),
+        ("git_staged",        ""),
+        ("git_unstaged",      ""),
+        ("git_untracked",     ""),
+        ("tokens_used",       " Tokens: "),
+        ("context_pct",       " Ctx: "),
+        ("context_bar",       " Ctx "),
+        ("session_duration",  " Time: "),
+        ("session_cost",      " Cost: "),
+        ("burn_rate",         " Rate: "),
+        ("session_name",      " Session: "),
+        ("thinking_effort",   " Effort: "),
+        ("block_reset_timer", " Reset: "),
+        ("vim_mode",          " Vim: "),
+        ("claude_email",      " "),
+        ("custom_text",       ""),
+        ("separator",         ""),
+    ],
+)
+def test_widget_default_prefix(widget_type, expected_prefix):
+    cls = REGISTRY[widget_type]
+    assert cls.default_prefix == expected_prefix
+
+
 def test_register_widget_adds_to_registry():
     @register_widget("_test_widget")
     class MyWidget(Widget):

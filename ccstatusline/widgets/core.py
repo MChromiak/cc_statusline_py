@@ -11,6 +11,7 @@ from ccstatusline.widgets.base import Widget, WidgetConfig, register_widget
 @register_widget("model")
 class ModelWidget(Widget):
     category = "session"
+    default_prefix = " Model: "
 
     def render(self, data: StatusData, config: WidgetConfig, color_level: str = "truecolor") -> str:
         return data.model_name
@@ -19,6 +20,7 @@ class ModelWidget(Widget):
 @register_widget("tokens_used")
 class TokensUsedWidget(Widget):
     category = "tokens"
+    default_prefix = " Tokens: "
 
     def render(self, data: StatusData, config: WidgetConfig, color_level: str = "truecolor") -> str:
         t = data.tokens_used
@@ -32,6 +34,7 @@ class TokensUsedWidget(Widget):
 @register_widget("context_pct")
 class ContextPctWidget(Widget):
     category = "tokens"
+    default_prefix = " Ctx: "
 
     def render(self, data: StatusData, config: WidgetConfig, color_level: str = "truecolor") -> str:
         pct = data.context_used_pct
@@ -41,6 +44,7 @@ class ContextPctWidget(Widget):
 @register_widget("context_bar")
 class ContextBarWidget(Widget):
     category = "tokens"
+    default_prefix = " Ctx "
 
     def render(self, data: StatusData, config: WidgetConfig, color_level: str = "truecolor") -> str:
         if not data.context_window:
@@ -73,6 +77,7 @@ class ContextBarWidget(Widget):
 @register_widget("git_branch")
 class GitBranchWidget(Widget):
     category = "git"
+    default_prefix = " Branch: "
 
     def render(self, data: StatusData, config: WidgetConfig, color_level: str = "truecolor") -> str:
         if data.worktree and data.worktree.get("branch"):
@@ -93,6 +98,7 @@ class GitBranchWidget(Widget):
 @register_widget("git_status")
 class GitStatusWidget(Widget):
     category = "git"
+    default_prefix = " Status: "
 
     def render(self, data: StatusData, config: WidgetConfig, color_level: str = "truecolor") -> str:
         try:
@@ -113,6 +119,7 @@ class GitStatusWidget(Widget):
 @register_widget("git_sha")
 class GitShaWidget(Widget):
     category = "git"
+    default_prefix = " SHA: "
 
     def render(self, data: StatusData, config: WidgetConfig, color_level: str = "truecolor") -> str:
         try:
@@ -219,6 +226,7 @@ class GitUntrackedWidget(Widget):
 @register_widget("session_duration")
 class SessionDurationWidget(Widget):
     category = "session"
+    default_prefix = " Time: "
 
     def render(self, data: StatusData, config: WidgetConfig, color_level: str = "truecolor") -> str:
         ms = data.session_duration_ms
@@ -237,6 +245,7 @@ class SessionDurationWidget(Widget):
 @register_widget("session_cost")
 class SessionCostWidget(Widget):
     category = "session"
+    default_prefix = " Cost: "
 
     def render(self, data: StatusData, config: WidgetConfig, color_level: str = "truecolor") -> str:
         cost = data.cost_usd
@@ -246,6 +255,7 @@ class SessionCostWidget(Widget):
 @register_widget("burn_rate")
 class BurnRateWidget(Widget):
     category = "session"
+    default_prefix = " Rate: "
 
     def render(
         self,
@@ -267,6 +277,7 @@ class BurnRateWidget(Widget):
 @register_widget("session_name")
 class SessionNameWidget(Widget):
     category = "session"
+    default_prefix = " Session: "
 
     def render(self, data: StatusData, config: WidgetConfig, color_level: str = "truecolor") -> str:
         if not data.session_id:
@@ -278,6 +289,7 @@ class SessionNameWidget(Widget):
 @register_widget("thinking_effort")
 class ThinkingEffortWidget(Widget):
     category = "session"
+    default_prefix = " Effort: "
 
     def render(self, data: StatusData, config: WidgetConfig, color_level: str = "truecolor") -> str:
         if isinstance(data.effort, dict) and data.effort.get("level"):
@@ -288,6 +300,7 @@ class ThinkingEffortWidget(Widget):
 @register_widget("block_reset_timer")
 class BlockResetTimerWidget(Widget):
     category = "tokens"
+    default_prefix = " Reset: "
 
     def render(self, data: StatusData, config: WidgetConfig, color_level: str = "truecolor") -> str:
         if not data.rate_limits:
@@ -328,6 +341,7 @@ class BlockResetTimerWidget(Widget):
 @register_widget("vim_mode")
 class VimModeWidget(Widget):
     category = "system"
+    default_prefix = " Vim: "
 
     def render(self, data: StatusData, config: WidgetConfig, color_level: str = "truecolor") -> str:
         if not data.vim:
@@ -342,6 +356,7 @@ class VimModeWidget(Widget):
 @register_widget("cwd")
 class CwdWidget(Widget):
     category = "system"
+    default_prefix = " Dir: "
 
     def render(self, data: StatusData, config: WidgetConfig, color_level: str = "truecolor") -> str:
         path = data.cwd or ""
@@ -355,6 +370,7 @@ class CwdWidget(Widget):
 @register_widget("claude_email")
 class ClaudeEmailWidget(Widget):
     category = "system"
+    default_prefix = " "
 
     def render(self, data: StatusData, config: WidgetConfig, color_level: str = "truecolor") -> str:
         try:
